@@ -69,10 +69,13 @@ black_images = [black_pawn, black_queen, black_king, black_knight, black_rook, b
 small_black_images = [black_pawn_small, black_queen_small, black_king_small, black_knight_small,
                       black_rook_small, black_bishop_small]
 piece_list = ['pawn', 'queen', 'king', 'knight', 'rook', 'bishop']
-# check variables/ flashing counter
+
 counter = 0
 winner = ''
 game_over = False
+
+def check_options():
+    pass
 
 def draw_board():
     for i in range(32): 
@@ -120,6 +123,42 @@ def draw_pieces():
             if selection == i:
                 pygame.draw.rect(screen, 'blue', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1,
                                                   100, 100], 2)
+
+def check_options():
+    pass
+
+def check_king():
+    pass
+
+def check_queen():
+    pass
+
+def check_bishop():
+    pass
+
+def check_rook():
+    pass
+
+def check_pawn():
+    pass
+
+def check_knight():
+    pass
+
+def check_valid_moves():
+    pass
+
+def draw_valid():
+    pass
+
+def draw_captured():
+    pass
+
+def draw_check():
+    pass
+
+def draw_game_over():
+    pass
 
 run = True
 while run:
