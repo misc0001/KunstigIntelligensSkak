@@ -110,7 +110,7 @@ def draw_pieces():
             screen.blit(white_images[index], (white_locations[i][0] * 100 + 10, white_locations[i][1] * 100 + 10))
         if turn_step < 2:
             if selection == i:
-                pygame.draw.rect(screen, 'red', [white_locations[i][0] * 100 + 1, white_locations[i][1] * 100 + 1,
+                pygame.draw.rect(screen, 'white', [white_locations[i][0] * 100 + 1, white_locations[i][1] * 100 + 1,
                                                  100, 100], 2)
 
     for i in range(len(black_pieces)):
@@ -121,11 +121,29 @@ def draw_pieces():
             screen.blit(black_images[index], (black_locations[i][0] * 100 + 10, black_locations[i][1] * 100 + 10))
         if turn_step >= 2:
             if selection == i:
-                pygame.draw.rect(screen, 'blue', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1,
+                pygame.draw.rect(screen, 'white', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1,
                                                   100, 100], 2)
 
-def check_options():
-    pass
+def check_options(pieces, locations, turn):
+    moves_list = []
+    all_moves_list = []
+    for i in range((len(pieces))):
+        location = locations[i]
+        piece = pieces[i]
+        if piece == 'pawn':
+            moves_list = check_pawn(location, turn)
+        ''' elif piece == 'rook':
+            moves_list = check_rook(location, turn)
+        elif piece == 'knight':
+            moves_list = check_knight(location, turn)
+        elif piece == 'bishop':
+            moves_list = check_bishop(location, turn)
+        elif piece == 'queen':
+            moves_list = check_queen(location, turn)
+        elif piece == 'king':
+            moves_list = check_king(location, turn) '''
+        all_moves_list.append(moves_list)
+    return all_moves_list
 
 def check_king():
     pass
@@ -139,17 +157,70 @@ def check_bishop():
 def check_rook():
     pass
 
-def check_pawn():
-    pass
+def check_pawn(position, color):
+    # Liste over mulige træk for bonden
+    moves_list = []
+
+    # Hvis bonden er hvid
+    if color == 'white':
+        # Tjek om feltet foran bonden er tomt og inden for brættets grænse
+        if (position[0], position[1] + 1) not in white_locations and \
+                (position[0], position[1] + 1) not in black_locations and position[1] < 7:
+            # Tilføj feltet som et muligt træk
+            moves_list.append((position[0], position[1] + 1))
+
+        # Tjek om bonden står på sin startposition og begge felter foran er tomme
+        if (position[0], position[1] + 2) not in white_locations and \
+                (position[0], position[1] + 2) not in black_locations and position[1] == 1:
+            # Tilføj dobbeltspring som muligt træk
+            moves_list.append((position[0], position[1] + 2))
+
+        # Tjek om der er en sort brik skråt frem til højre, som kan slås
+        if (position[0] + 1, position[1] + 1) in black_locations:
+            moves_list.append((position[0] + 1, position[1] + 1))
+
+        # Tjek om der er en sort brik skråt frem til venstre, som kan slås
+        if (position[0] - 1, position[1] + 1) in black_locations:
+            moves_list.append((position[0] - 1, position[1] + 1))
+
+    # Hvis bonden er sort
+    else:
+        if (position[0], position[1] - 1) not in white_locations and \
+                (position[0], position[1] - 1) not in black_locations and position[1] > 0:
+            moves_list.append((position[0], position[1] - 1))
+
+        if (position[0], position[1] - 2) not in white_locations and \
+                (position[0], position[1] - 2) not in black_locations and position[1] == 6:
+            moves_list.append((position[0], position[1] - 2))
+
+        if (position[0] + 1, position[1] - 1) in white_locations:
+            moves_list.append((position[0] + 1, position[1] - 1))
+
+        if (position[0] - 1, position[1] - 1) in white_locations:
+            moves_list.append((position[0] - 1, position[1] - 1))
+
+    # Returnér listen med alle mulige træk for bonden
+    return moves_list
+
 
 def check_knight():
     pass
 
 def check_valid_moves():
-    pass
+    if turn_step < 2:
+        options_list = white_options
+    else:
+        options_list = black_options
+    valid_moves = options_list[selection]
+    return valid_moves
 
-def draw_valid():
-    pass
+def draw_valid(moves):
+    if turn_step < 2:
+        color = 'white'
+    else:
+        color = 'white'
+    for i in range(len(moves)):
+        pygame.draw.circle(screen, color, (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
 
 def draw_captured():
     pass
@@ -160,16 +231,76 @@ def draw_check():
 def draw_game_over():
     pass
 
+
+black_options = check_options(black_pieces, black_locations, 'black')
+white_options = check_options(white_pieces, white_locations, 'white')
 run = True
 while run:
     timer.tick(fps)
     screen.fill('light gray')
     draw_board()
     draw_pieces()
+    if selection != 100:
+        valid_moves = check_valid_moves()
+        draw_valid(valid_moves)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
+        # hvis venstre museknap trykkes ned og spillet ikke er slut
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over:
+            # Udregn koodinaterne på brættet baseret på musepositionen
+            x_coord = event.pos[0] // 100 # Dividerer med 100 fordi hver felt er 100 pixels
+            y_coord = event.pos[1] // 100
+            click_coords = (x_coord, y_coord) # Gem klik-koordinaterne som en tuple
+
+            # Hvids tur (turn_step 0 og 1)
+            if turn_step <= 1:
+                # Hvis man klikker på en hvid brik
+                if click_coords in white_locations:
+                    selection = white_locations.index(click_coords) # Find hvilken brik der blev valgt
+                    if turn_step == 0:
+                        turn_step = 1 # Gå til næste trin: vælge felt at flytte til
+
+                # Hvis man klikker på et gyldigt felt
+                if click_coords in valid_moves and selection != 100:
+                    white_locations[selection] = click_coords
+                    # Hvis der står en sort brik der, skal den fjernes
+                    if click_coords in black_locations:
+                        black_piece = black_locations.index(click_coords)
+                        captured_pieces_white.append(black_pieces[black_piece])
+
+                        # Fjern sort brik fra spillet
+                        black_pieces.pop(black_piece)
+                        black_locations.pop(black_piece)
+                    
+                    # Opdater muligheder for begge farver
+                    black_options = check_options(black_pieces, black_locations, 'black')
+                    white_options = check_options(white_pieces, white_locations, 'white')
+
+                    # Skift tur til sort
+                    turn_step = 2
+                    selection = 100 # Ingen brik er længere valgt
+                    valid_moves = [] # Ryd listen over gyldige træk
+
+            # Sorts tur (turn_step 2 og 3)        
+            if turn_step > 1:
+                if click_coords in black_locations:
+                    selection = black_locations.index(click_coords)
+                    if turn_step == 2:
+                        turn_step = 3
+                if click_coords in valid_moves and selection != 100:
+                    black_locations[selection] = click_coords
+                    if click_coords in white_locations:
+                        white_piece = white_locations.index(click_coords)
+                        captured_pieces_black.append(white_pieces[white_piece])
+                        white_pieces.pop(white_piece)
+                        white_locations.pop(white_piece)
+                    black_options = check_options(black_pieces, black_locations, 'black')
+                    white_options = check_options(white_pieces, white_locations, 'white')
+                    turn_step = 0
+                    selection = 100
+                    valid_moves = []
 
     pygame.display.flip()
 pygame.quit()
