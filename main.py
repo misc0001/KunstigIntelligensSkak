@@ -145,11 +145,54 @@ def check_options(pieces, locations, turn):
         all_moves_list.append(moves_list)
     return all_moves_list
 
-def check_king():
-    pass
+def check_king(position, color):
+    moves_list = []  # Starter med tom liste, og så tilføjer gyldige træk
+    directions = [(-1, -1), (-1, 0), (-1, 1),
+                  (0, -1),          (0, 1),
+                  (1, -1), (1, 0),  (1, 1)]
 
-def check_queen():
-    pass
+    if color == 'white': # Identificerer hvilke brækker der er på ens holkd og hvilke der er mod en
+        friendly_locations = white_locations
+        enemy_locations = black_locations
+    else:
+        friendly_locations = black_locations
+        enemy_locations = white_locations
+
+    for d in directions:
+        new_pos = (position[0] + d[0], position[1] + d[1])
+        if 0 <= new_pos[0] <= 7 and 0 <= new_pos[1] <= 7: # Tjekker om nu position er indenfor brættet
+            if new_pos not in friendly_locations:
+                moves_list.append(new_pos)
+
+    return moves_list
+
+
+def check_queen(position, color):
+    moves_list = [] # Igen, starter med en tom liste og tilføjer gyldige træk bagefter
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1),
+                  (-1, -1), (-1, 1), (1, -1), (1, 1)]
+
+    if color == 'white': # Skelner hvem der er med eller mod en igen
+        friendly_locations = white_locations
+        enemy_locations = black_locations
+    else:
+        friendly_locations = black_locations
+        enemy_locations = white_locations
+
+    for d in directions:
+        for i in range(1, 8): 
+            new_pos = (position[0] + d[0]*i, position[1] + d[1]*i) # Rykker dronningen
+            if 0 <= new_pos[0] <= 7 and 0 <= new_pos[1] <= 7:
+                if new_pos in friendly_locations: # Ugyldigt træk, går igennem venlig brik
+                    break
+                moves_list.append(new_pos) # Gyldigt træk
+                if new_pos in enemy_locations: # Gyldigt træk men kan ikke gå videre. Slår en modspillers brik
+                    break
+            else: # Ude for brættet
+                break
+
+    return moves_list
+
 
 def check_bishop():
     pass
