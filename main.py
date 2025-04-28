@@ -194,11 +194,63 @@ def check_queen(position, color):
     return moves_list
 
 
-def check_bishop():
-    pass
+def check_bishop(position, color):
+    moves_list = []
+    directions = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
 
-def check_rook():
-    pass
+    if color == 'white':
+        friendly_locations = white_locations
+        enemy_locations = black_locations
+    else:
+        friendly_locations = black_locations
+        enemy_locations = white_locations
+
+    for d in directions:
+        for i in range(1, 8):
+            new_pos = (position[0] + d[0] * i, position[1] + d[1] * i)
+            if 0 <= new_pos[0] <= 7 and 0 <= new_pos[1] <= 7:
+            # Tjek at der ikke står en venlig brik
+                if new_pos in friendly_locations:
+                    break
+            moves_list.append(new_pos)
+            if new_pos in enemy_locations:
+                break
+       
+    return moves_list
+
+def check_rook(position, color):
+    moves_list = []
+    if color == 'white':
+        enemies_list = black_locations
+        friends_list = white_locations
+    else:
+        friends_list = black_locations
+        enemies_list = white_locations
+    for i in range(4):  # down, up, right, left
+        path = True
+        chain = 1
+        if i == 0:
+            x = 0
+            y = 1
+        elif i == 1:
+            x = 0
+            y = -1
+        elif i == 2:
+            x = 1
+            y = 0
+        else:
+            x = -1
+            y = 0
+        while path:
+            if (position[0] + (chain * x), position[1] + (chain * y)) not in friends_list and \
+                    0 <= position[0] + (chain * x) <= 7 and 0 <= position[1] + (chain * y) <= 7:
+                moves_list.append((position[0] + (chain * x), position[1] + (chain * y)))
+                if (position[0] + (chain * x), position[1] + (chain * y)) in enemies_list:
+                    path = False
+                chain += 1
+            else:
+                path = False
+    return moves_list
 
 def check_pawn(position, color):
     # Liste over mulige træk for bonden
