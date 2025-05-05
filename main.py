@@ -107,8 +107,42 @@ def draw_text_input(text):
     screen.blit(input_text_surface, (input_box.x + 10, input_box.y + 5))
 
 
-def check_options():
-    pass
+def check_options(pieces, locations, turn, last_move):
+    moves_list = []
+    all_moves_list = []
+    if turn == 'white':
+        enemy_pieces = black_pieces
+        enemy_locations = black_locations
+    else:
+        enemy_pieces = white_pieces
+        enemy_locations = white_locations
+    
+    for i in range((len(pieces))):
+        location = locations[i]
+        piece = pieces[i]
+        if piece == 'pawn':
+            moves_list = chess_rules.check_pawn(location, turn, white_locations, black_locations, last_move)
+        elif piece == 'rook':
+            moves_list = chess_rules.check_rook(location, turn, white_locations, black_locations)
+        elif piece == 'queen':
+            moves_list = chess_rules.check_queen(location, turn, white_locations, black_locations)
+        elif piece == 'king':
+            moves_list = chess_rules.check_king(
+                location, turn,
+                white_locations, black_locations,
+                white_pieces, black_pieces,
+                pieces
+            )
+        elif piece == 'knight':
+            moves_list = chess_rules.check_knight(location, turn, white_locations, black_locations)
+        elif piece == 'bishop':
+            moves_list = chess_rules.check_bishop(location, turn, white_locations, black_locations)
+        safe_moves = chess_rules.valid_moves(i, moves_list, pieces, locations,
+                                             enemy_pieces, enemy_locations, turn, draw_check)
+        all_moves_list.append(safe_moves)
+
+
+    return all_moves_list
 
 def draw_board():
     for i in range(32): 
