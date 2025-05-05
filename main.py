@@ -1,4 +1,6 @@
 import pygame
+from collections import Counter
+
 
 pygame.init()
 
@@ -74,8 +76,7 @@ counter = 0
 winner = ''
 game_over = False
 
-def check_options():
-    pass
+
 
 def draw_board():
     for i in range(32): 
@@ -265,8 +266,44 @@ def draw_valid(moves):
     for i in range(len(moves)):
         pygame.draw.circle(screen, color, (moves[i][0] * 100 + 50, moves[i][1] * 100 + 50), 5)
 
+
 def draw_captured():
-    pass
+    # Baggrund til fangede brikker
+    pygame.draw.rect(screen, 'dark gray', [810, 0, 190, 800])  # Tydelig farve
+
+    screen.blit(font.render("White Captures:", True, 'white'), (820, 20))
+    screen.blit(font.render("Black Captures:", True, 'white'), (820, 420))
+
+    # -------- White Captures (black pieces taken) --------
+    piece_counts_white = Counter(captured_pieces_white)
+    white_y = 60
+    for piece, count in piece_counts_white.items():
+        index = piece_list.index(piece)
+        screen.blit(small_black_images[index], (830, white_y))
+        if count > 1:
+            count_text = font.render(f"x{count}", True, 'white')
+            screen.blit(count_text, (880, white_y + 10))
+        white_y += 50
+
+    # Hvis ingen er fanget
+    if not captured_pieces_white:
+        screen.blit(font.render("None", True, 'white'), (830, white_y))
+
+    # -------- Black Captures (white pieces taken) --------
+    piece_counts_black = Counter(captured_pieces_black)
+    black_y = 460
+    for piece, count in piece_counts_black.items():
+        index = piece_list.index(piece)
+        screen.blit(small_white_images[index], (830, black_y))
+        if count > 1:
+            count_text = font.render(f"x{count}", True, 'white')
+            screen.blit(count_text, (880, black_y + 10))
+        black_y += 50
+
+    if not captured_pieces_black:
+        screen.blit(font.render("None", True, 'white'), (830, black_y))
+
+
 
 def draw_check():
     pass
@@ -275,14 +312,24 @@ def draw_game_over():
     pass
 
 
-black_options = check_options(black_pieces, black_locations, 'black')
-white_options = check_options(white_pieces, white_locations, 'white')
+#black_options = check_options(black_pieces, black_locations, 'black')
+#white_options = check_options(white_pieces, white_locations, 'white')
+try:
+    black_options = check_options(black_pieces, black_locations, 'black')
+    white_options = check_options(white_pieces, white_locations, 'white')
+    print("✅ check_options kørte uden fejl!")
+except Exception as e:
+    print("❌ FEJL I check_options:", e)
+    pygame.quit()
+    exit()
+
 run = True
 while run:
     timer.tick(fps)
     screen.fill('light gray')
     draw_board()
     draw_pieces()
+    draw_captured()
     if selection != 100:
         valid_moves = check_valid_moves()
         draw_valid(valid_moves)
