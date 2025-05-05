@@ -13,6 +13,10 @@ font = pygame.font.Font('freesansbold.ttf', 20)
 big_font = pygame.font.Font('freesansbold.ttf', 50)
 timer = pygame.time.Clock()
 fps = 60
+menu_state = True
+save_string = ''
+input_active = False
+input_text = ''
 check_message_timer = 0
 CHECK_MESSAGE_DURATION = 60  # frames (1 sekund at 60 FPS)
 
@@ -82,7 +86,29 @@ counter = 0
 winner = ''
 game_over = False
 last_move = None
-en_passant_possible = None 
+en_passant_possible = None
+
+def draw_menu():
+    screen.fill('light gray')
+    title = big_font.render("Velkommen til Skak!", True, 'black')
+    new_game = font.render("Tryk 'N' for nyt spil", True, 'black')
+    load_game = font.render("Tryk 'L' for at loade spil via streng", True, 'black')
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 200))
+    screen.blit(new_game, (WIDTH // 2 - new_game.get_width() // 2, 300))
+    screen.blit(load_game, (WIDTH // 2 - load_game.get_width() // 2, 350))
+
+def draw_text_input(text):
+    input_label = font.render("Indtast gemt spilstreng og tryk Enter:", True, 'black')
+    input_box = pygame.Rect(WIDTH // 2 - 200, 450, 400, 40)
+    pygame.draw.rect(screen, 'white', input_box)
+    pygame.draw.rect(screen, 'black', input_box, 2)
+    input_text_surface = font.render(text, True, 'black')
+    screen.blit(input_label, (WIDTH // 2 - input_label.get_width() // 2, 400))
+    screen.blit(input_text_surface, (input_box.x + 10, input_box.y + 5))
+
+
+def check_options():
+    pass
 
 def draw_board():
     for i in range(32): 
