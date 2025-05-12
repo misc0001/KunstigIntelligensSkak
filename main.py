@@ -37,6 +37,8 @@ turn_step = 0
 selection = 100
 valid_moves = []
 en_passant_possible = None 
+player_color = None  # 'white' or 'black'
+color_selection_active = True  # New state to manage color selection screen
 
 black_queen = pygame.image.load('images/black_queen.png')
 black_queen = pygame.transform.scale(black_queen, (80, 80))
@@ -106,7 +108,16 @@ def draw_text_input(text):
     screen.blit(input_label, (WIDTH // 2 - input_label.get_width() // 2, 400))
     screen.blit(input_text_surface, (input_box.x + 10, input_box.y + 5))
 
+def draw_color_selection():
+    screen.fill('light gray')
+    title = big_font.render("Vælg farve", True, 'black')
+    white_option = font.render("Tryk 'W' for at spille som hvid", True, 'black')
+    black_option = font.render("Tryk 'B' for at spille som sort", True, 'black')
+    screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 200))
+    screen.blit(white_option, (WIDTH // 2 - white_option.get_width() // 2, 300))
+    screen.blit(black_option, (WIDTH // 2 - black_option.get_width() // 2, 350))
 
+<<<<<<< HEAD
 def check_options(pieces, locations, turn, last_move):
     moves_list = []
     all_moves_list = []
@@ -143,6 +154,148 @@ def check_options(pieces, locations, turn, last_move):
 
 
     return all_moves_list
+=======
+def evaluate_board(white_pieces, white_locations, black_pieces, black_locations):
+    piece_values = {
+        'pawn': 1,
+        'knight': 3,
+        'bishop': 3,
+        'rook': 5,
+        'queen': 9,
+        'king': 0
+    }
+    
+    white_score = sum(piece_values[piece] for piece in white_pieces)
+    black_score = sum(piece_values[piece] for piece in black_pieces)
+    
+    return white_score - black_score
+
+
+def minimax(depth, is_maximizing, alpha, beta, white_pieces, white_locations, black_pieces, black_locations):
+    if depth == 0:
+        return evaluate_board(white_pieces, white_locations, black_pieces, black_locations)
+    
+    if is_maximizing:
+        pieces = white_pieces
+        locations = white_locations
+        options = check_options(white_pieces, white_locations, 'white', last_move)
+        enemy_pieces = black_pieces
+        enemy_locations = black_locations
+    else:
+        pieces = black_pieces
+        locations = black_locations
+        options = check_options(black_pieces, black_locations, 'black', last_move)
+        enemy_pieces = white_pieces
+        enemy_locations = white_locations
+    
+    if is_maximizing:
+        best_score = float('-inf')
+    else:
+        best_score = float('inf')
+    
+    for piece_idx in range(len(pieces)):
+        for move in options[piece_idx]:
+            new_white_pieces = white_pieces.copy()
+            new_white_locations = white_locations.copy()
+            new_black_pieces = black_pieces.copy()
+            new_black_locations = black_locations.copy()
+            
+            old_location = locations[piece_idx]
+            if is_maximizing:
+                new_white_locations[piece_idx] = move
+                if move in black_locations:
+                    captured_idx = black_locations.index(move)
+                    new_black_pieces.pop(captured_idx)
+                    new_black_locations.pop(captured_idx)
+            else:
+                new_black_locations[piece_idx] = move
+                if move in white_locations:
+                    captured_idx = white_locations.index(move)
+                    new_white_pieces.pop(captured_idx)
+                    new_white_locations.pop(captured_idx)
+            
+            score = minimax(depth - 1, not is_maximizing, alpha, beta, 
+                           new_white_pieces, new_white_locations, 
+                           new_black_pieces, new_black_locations)
+            
+            if is_maximizing:
+                best_score = max(score, best_score)
+                alpha = max(alpha, best_score)
+            else:
+                best_score = min(score, best_score)
+                beta = min(beta, best_score)
+            
+            if beta <= alpha:
+                break
+        
+        if beta <= alpha:
+            break
+    
+    return best_score
+
+
+def find_best_move(white_pieces, white_locations, black_pieces, black_locations, depth, is_white_turn):
+    best_score = float('-inf') if is_white_turn else float('inf')
+    best_piece_idx = -1
+    best_move = None
+    alpha = float('-inf')
+    beta = float('inf')
+    
+    if is_white_turn:
+        pieces = white_pieces
+        locations = white_locations
+        options = check_options(white_pieces, white_locations, 'white', last_move)
+        enemy_pieces = black_pieces
+        enemy_locations = black_locations
+    else:
+        pieces = black_pieces
+        locations = black_locations
+        options = check_options(black_pieces, black_locations, 'black', last_move)
+        enemy_pieces = white_pieces
+        enemy_locations = white_locations
+    
+    for piece_idx in range(len(pieces)):
+        for move in options[piece_idx]:
+            new_white_pieces = white_pieces.copy()
+            new_white_locations = white_locations.copy()
+            new_black_pieces = black_pieces.copy()
+            new_black_locations = black_locations.copy()
+            
+            if is_white_turn: 
+                new_white_locations[piece_idx] = move
+                if move in black_locations:
+                    captured_idx = black_locations.index(move)
+                    new_black_pieces.pop(captured_idx)
+                    new_black_locations.pop(captured_idx)
+            else:
+                new_black_locations[piece_idx] = move
+                if move in white_locations:
+                    captured_idx = white_locations.index(move)
+                    new_white_pieces.pop(captured_idx)
+                    new_white_locations.pop(captured_idx)
+            
+            score = minimax(depth - 1, not is_white_turn, alpha, beta, 
+                           new_white_pieces, new_white_locations, 
+                           new_black_pieces, new_black_locations)
+            
+            if (is_white_turn and score > best_score) or (not is_white_turn and score < best_score):
+                best_score = score
+                best_piece_idx = piece_idx
+                best_move = move
+            
+            if is_white_turn:
+                alpha = max(alpha, best_score)
+            else:
+                beta = min(beta, best_score)
+            
+            if beta <= alpha:
+                break
+        
+        if beta <= alpha:
+            break
+    
+    return best_piece_idx, best_move
+>>>>>>> 7776ee0 (implementeret ai med chess_rules)
 
 def draw_board():
     for i in range(32): 
@@ -525,7 +678,24 @@ while run:
 
 
             # Sorts tur (turn_step 2 og 3)        
-            if turn_step > 1:
+        if turn_step > 1:
+            if turn_step == 2:
+                piece_idx, move = find_best_move(white_pieces, white_locations, black_pieces, black_locations,
+                                                depth=3, is_white_turn=False)
+                if piece_idx != -1 and move is not None:
+                    selection = piece_idx
+                    if move in white_locations:
+                        white_piece = white_locations.index(move)
+                        captured_pieces_black.append(white_pieces[white_piece])
+                        white_pieces.pop(white_piece)
+                        white_locations.pop(white_piece)
+                    black_locations[selection] = move
+                    black_options = check_options(black_pieces, black_locations, 'black', last_move)
+                    white_options = check_options(white_pieces, white_locations, 'white', last_move)
+                    turn_step = 0
+                    selection = 100
+                    valid_moves = []
+            else:  # turn_step == 3
                 if click_coords in black_locations:
                     selection = black_locations.index(click_coords)
                     if turn_step == 2:
@@ -568,10 +738,10 @@ while run:
                         winner   = 'draw'
 
                     chess_rules.update_castling_rights(
-                       black_pieces[selection], old_pos, 'black')
+                    black_pieces[selection], old_pos, 'black')
 
                     chess_rules.pawn_promotion(
-                       black_pieces, black_locations, 'black')
+                    black_pieces, black_locations, 'black')
                         
                     if (black_pieces[selection] == 'pawn'
                         and old_pos[1] == 3
@@ -593,7 +763,7 @@ while run:
                     
                     last_move = (old_pos, click_coords)
 
-                   # Track black double pawn move for en passant
+                # Track black double pawn move for en passant
                     if black_pieces[selection] == 'pawn' and abs(click_coords[1] - old_pos[1]) == 2:
                         en_passant_possible = (click_coords[0], click_coords[1] + 1)
                     else:
@@ -616,12 +786,12 @@ while run:
                     chess_rules.reset_turn_timer()
 
                     if chess_rules.check_stalemate(white_pieces, white_locations, black_pieces, black_locations, 'white',
-                                                   draw_check, white_locations, black_locations, white_pieces, black_pieces):
+                                                draw_check, white_locations, black_locations, white_pieces, black_pieces):
                         game_over = True
                         winner = 'draw'
                     elif chess_rules.check_checkmate(white_pieces, white_locations, black_pieces, black_locations,
-                                 'white', draw_check, white_locations, black_locations,
-                                 white_pieces, black_pieces):
+                                'white', draw_check, white_locations, black_locations,
+                                white_pieces, black_pieces):
                         game_over = True
                         winner = 'black'
                     if game_over:
@@ -630,6 +800,3 @@ while run:
 
     pygame.display.flip()
 pygame.quit()
-
-
-
