@@ -259,51 +259,39 @@ def find_best_move(white_pieces, white_locations, black_pieces, black_locations,
     return best_piece_idx, best_move
  
 def draw_board():
-    for i in range(32):
-    # Vi tegner kun de mørke firkanter på et 8x8 skakbræt.
+    for row in range(8):
+        for col in range(8):
+            color = 'white' if (row + col) % 2 == 0 else 'dark gray'
+            if player_color == 'black':
+                draw_row = 7 - row
+                draw_col = 7 - col
+            else:
+                draw_row = row
+                draw_col = col
+            pygame.draw.rect(screen, color, (draw_col * 100, draw_row * 100, 100, 100))
+
  
-        column = i % 4
-        # Hver række har kun 4 mørke firkanter
-        row = i // 4
-        # Hver 4 mørke firkant udgør én række
- 
-        if row % 2 == 0:
-            pygame.draw.rect(screen, 'dark gray', [600 - (column * 200), row * 100, 100, 100])
-            # Hvis rækken er lige (0, 2, 4...), starter de mørke firkanter i kolonne 0
-        else:
-            pygame.draw.rect(screen, 'dark gray', [700 - (column * 200), row * 100, 100, 100])
-            # Hvis rækken er ulige (1, 3, 5...), starter de mørke firkanter i kolonne 1
-        for i in range(9):
-             # Vi tegner 9 linjer for at få et 8x8 grid
-            pygame.draw.line(screen, 'black', (0, 100 * i), (800, 100 * i), 2)
-            # Vandrette linjer: starter ved venstre kant (x = 0), og går til højre kant (x = 800)
-            # y-koordinatet ændres for hver række (100 pixels mellem linjerne)
-            pygame.draw.line(screen, 'black', (100 * i, 0), (100 * i, 800), 2)
-            # Lodrette linjer: starter ved top (y = 0), og går ned til bunden (y = 800)
-            # x-koodinaterne ændres ligesom før
- 
+def transform_coords(x, y):
+    if player_color == 'black':
+        return 7 - x, 7 - y
+    return x, y
+
 def draw_pieces():
     for i in range(len(white_pieces)):
         index = piece_list.index(white_pieces[i])
-        if white_pieces[i] == 'pawn':
-            screen.blit(white_pawn, (white_locations[i][0] * 100 + 22, white_locations[i][1] * 100 + 30))
-        else:
-            screen.blit(white_images[index], (white_locations[i][0] * 100 + 10, white_locations[i][1] * 100 + 10))
-        if turn_step < 2:
-            if selection == i:
-                pygame.draw.rect(screen, 'white', [white_locations[i][0] * 100 + 1, white_locations[i][1] * 100 + 1,
-                                                 100, 100], 2)
- 
+        x, y = transform_coords(*white_locations[i])
+        img = white_pawn if white_pieces[i] == 'pawn' else white_images[index]
+        screen.blit(img, (x * 100 + 10, y * 100 + 10))
+        if turn_step < 2 and selection == i:
+            pygame.draw.rect(screen, 'white', [x * 100 + 1, y * 100 + 1, 100, 100], 2)
+
     for i in range(len(black_pieces)):
         index = piece_list.index(black_pieces[i])
-        if black_pieces[i] == 'pawn':
-            screen.blit(black_pawn, (black_locations[i][0] * 100 + 22, black_locations[i][1] * 100 + 30))
-        else:
-            screen.blit(black_images[index], (black_locations[i][0] * 100 + 10, black_locations[i][1] * 100 + 10))
-        if turn_step >= 2:
-            if selection == i:
-                pygame.draw.rect(screen, 'white', [black_locations[i][0] * 100 + 1, black_locations[i][1] * 100 + 1,
-                                                  100, 100], 2)
+        x, y = transform_coords(*black_locations[i])
+        img = black_pawn if black_pieces[i] == 'pawn' else black_images[index]
+        screen.blit(img, (x * 100 + 10, y * 100 + 10))
+        if turn_step >= 2 and selection == i:
+            pygame.draw.rect(screen, 'white', [x * 100 + 1, y * 100 + 1, 100, 100], 2)
         # Highlight king if in check
     if draw_check(white_pieces, white_locations, black_pieces, black_locations, 'white'):
         king_index = white_pieces.index('king')
@@ -489,6 +477,10 @@ def draw_promotion_message():
     promotion_text = font.render('Promote: (Q)ueen, (R)ook, (B)ishop, (K)night', True, 'black')
     text_rect = promotion_text.get_rect(center=(900, 120))
     screen.blit(promotion_text, text_rect)
+
+def is_players_turn():
+    return (player_color == 'white' and turn_step <= 1) or (player_color == 'black' and turn_step >= 2)
+
  
  
 black_options = check_options(black_pieces, black_locations, 'black', last_move)
@@ -498,6 +490,21 @@ while run:
     timer.tick(fps)
     screen.fill('light gray')
     turn_step, selection_reset, valid_moves_reset, time_left = chess_rules.turn_timer(turn_step)
+
+    if color_selection_active:
+        draw_color_selection()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:
+                    player_color = 'white'
+                    color_selection_active = False
+                elif event.key == pygame.K_b:
+                    player_color = 'black'
+                    color_selection_active = False
+        pygame.display.flip()
+        continue  # Skip rest of game loop until color is chosen
     
     draw_board()
     draw_pieces()
@@ -522,11 +529,14 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         # hvis venstre museknap trykkes ned og spillet ikke er slut
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over:
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not game_over and is_players_turn():
             # Udregn koodinaterne på brættet baseret på musepositionen
-            x_coord = event.pos[0] // 100 # Dividerer med 100 fordi hver felt er 100 pixels
+            x_coord = event.pos[0] // 100
             y_coord = event.pos[1] // 100
-            click_coords = (x_coord, y_coord) # Gem klik-koordinaterne som en tuple
+            if player_color == 'black':
+                x_coord = 7 - x_coord
+                y_coord = 7 - y_coord
+            click_coords = (x_coord, y_coord)
  
             # Hvids tur (turn_step 0 og 1)
             if turn_step <= 1:
@@ -621,7 +631,7 @@ while run:
                         winner   = 'draw'
  
                     # Skift tur til sort
-                    turn_step = 2
+                    turn_step = 2 if player_color == 'white' else 0
                     selection = 100 # Ingen brik er længere valgt
                     valid_moves = [] # Ryd listen over gyldige træk
                     chess_rules.reset_turn_timer() # Reset timer
@@ -640,9 +650,10 @@ while run:
  
             # Sorts tur (turn_step 2 og 3)        
         if turn_step > 1:
-            if turn_step == 2:
+            if (player_color == 'white' and turn_step == 2) or (player_color == 'black' and turn_step == 0):
                 piece_idx, move = find_best_move(white_pieces, white_locations, black_pieces, black_locations,
-                                                depth=3, is_white_turn=False)
+                                                depth=3, is_white_turn = (player_color == 'black')
+)
                 if piece_idx != -1 and move is not None:
                     selection = piece_idx
                     if move in white_locations:
