@@ -2,6 +2,7 @@ import pygame
 import chess_rules
 from chess_rules import update_half_move_clock, is_fifty_move_draw
 from chess_rules import record_position, is_threefold_repetition_draw
+from chess_rules import valid_moves
 
 
 pygame.init()
@@ -25,7 +26,7 @@ white_pieces = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight',
                 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
 white_locations = [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0),
                    (0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1)]
-black_pieces = ['rook', 'knight', 'bishop', 'king', 'queen', 'bishop', 'knight', 'rook',
+black_pieces = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook',
                 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn', 'pawn']
 black_locations = [(0, 7), (1, 7), (2, 7), (3, 7), (4, 7), (5, 7), (6, 7), (7, 7),
                    (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6), (6, 6), (7, 6)]
@@ -148,6 +149,8 @@ def check_options(pieces, locations, turn, last_move):
 
 
     return all_moves_list
+
+
 def evaluate_board(white_pieces, white_locations, black_pieces, black_locations):
     piece_values = {
         'pawn': 1,
@@ -157,74 +160,104 @@ def evaluate_board(white_pieces, white_locations, black_pieces, black_locations)
         'queen': 9,
         'king': 0
     }
-    
-    white_score = sum(piece_values[piece] for piece in white_pieces)
-    black_score = sum(piece_values[piece] for piece in black_pieces)
-    
+
+    center_weight_table = [
+        [0, 1, 2, 3, 3, 2, 1, 0],
+        [1, 2, 3, 4, 4, 3, 2, 1],
+        [2, 3, 4, 5, 5, 4, 3, 2],
+        [3, 4, 5, 6, 6, 5, 4, 3],
+        [3, 4, 5, 6, 6, 5, 4, 3],
+        [2, 3, 4, 5, 5, 4, 3, 2],
+        [1, 2, 3, 4, 4, 3, 2, 1],
+        [0, 1, 2, 3, 3, 2, 1, 0]
+    ]
+
+    white_score = 0
+    black_score = 0
+
+    for piece, loc in zip(white_pieces, white_locations):
+        base = piece_values.get(piece, 0)
+        x, y = loc
+        white_score += base
+        white_score += center_weight_table[y][x] * 0.1  # Positional bonus
+
+    for piece, loc in zip(black_pieces, black_locations):
+        base = piece_values.get(piece, 0)
+        x, y = loc
+        black_score += base
+        black_score += center_weight_table[7 - y][x] * 0.1  # Mirror table for black
+
+    # Encourage putting the enemy king in check
+    if draw_check(black_pieces, black_locations, white_pieces, white_locations, 'white'):
+        black_score += 1.5  # reward checking white king
+    if draw_check(white_pieces, white_locations, black_pieces, black_locations, 'black'):
+        white_score += 1.5  # reward checking black king
+
     return white_score - black_score
+
+
 
 
 def minimax(depth, is_maximizing, alpha, beta, white_pieces, white_locations, black_pieces, black_locations):
     if depth == 0:
         return evaluate_board(white_pieces, white_locations, black_pieces, black_locations)
-    
-    if is_maximizing:
-        pieces = white_pieces
-        locations = white_locations
-        options = check_options(white_pieces, white_locations, 'white', last_move)
-        enemy_pieces = black_pieces
-        enemy_locations = black_locations
-    else:
-        pieces = black_pieces
-        locations = black_locations
-        options = check_options(black_pieces, black_locations, 'black', last_move)
-        enemy_pieces = white_pieces
-        enemy_locations = white_locations
-    
+
+    # Assign state depending on turn
     if is_maximizing:
         best_score = float('-inf')
+        pieces, locations = white_pieces, white_locations
+        enemy_pieces, enemy_locations = black_pieces, black_locations
+        turn = 'white'
     else:
         best_score = float('inf')
-    
-    for piece_idx in range(len(pieces)):
-        for move in options[piece_idx]:
-            new_white_pieces = white_pieces.copy()
-            new_white_locations = white_locations.copy()
-            new_black_pieces = black_pieces.copy()
-            new_black_locations = black_locations.copy()
-            
-            old_location = locations[piece_idx]
+        pieces, locations = black_pieces, black_locations
+        enemy_pieces, enemy_locations = white_pieces, white_locations
+        turn = 'black'
+
+    options = check_options(pieces, locations, turn, last_move)
+
+    for piece_idx, moves in enumerate(options):
+        for move in moves:
+            # Clone state
+            new_white_pieces = white_pieces[:]
+            new_white_locations = white_locations[:]
+            new_black_pieces = black_pieces[:]
+            new_black_locations = black_locations[:]
+
+            # Make the move
             if is_maximizing:
                 new_white_locations[piece_idx] = move
                 if move in black_locations:
-                    captured_idx = black_locations.index(move)
-                    new_black_pieces.pop(captured_idx)
-                    new_black_locations.pop(captured_idx)
+                    capture_idx = black_locations.index(move)
+                    new_black_pieces.pop(capture_idx)
+                    new_black_locations.pop(capture_idx)
             else:
                 new_black_locations[piece_idx] = move
                 if move in white_locations:
-                    captured_idx = white_locations.index(move)
-                    new_white_pieces.pop(captured_idx)
-                    new_white_locations.pop(captured_idx)
-            
-            score = minimax(depth - 1, not is_maximizing, alpha, beta, 
-                           new_white_pieces, new_white_locations, 
-                           new_black_pieces, new_black_locations)
-            
+                    capture_idx = white_locations.index(move)
+                    new_white_pieces.pop(capture_idx)
+                    new_white_locations.pop(capture_idx)
+
+            # Recursive call
+            score = minimax(depth - 1, not is_maximizing, alpha, beta,
+                            new_white_pieces, new_white_locations,
+                            new_black_pieces, new_black_locations)
+
+            # Update best score and prune
             if is_maximizing:
-                best_score = max(score, best_score)
+                if score > best_score:
+                    best_score = score
                 alpha = max(alpha, best_score)
             else:
-                best_score = min(score, best_score)
+                if score < best_score:
+                    best_score = score
                 beta = min(beta, best_score)
-            
+
             if beta <= alpha:
-                break
-        
-        if beta <= alpha:
-            break
-    
+                return best_score  # immediate cutoff
+
     return best_score
+
 
 
 def find_best_move(white_pieces, white_locations, black_pieces, black_locations, depth, is_white_turn):
@@ -248,7 +281,14 @@ def find_best_move(white_pieces, white_locations, black_pieces, black_locations,
         enemy_locations = white_locations
     
     for piece_idx in range(len(pieces)):
-        for move in options[piece_idx]:
+        legal_moves = chess_rules.valid_moves(
+            piece_idx, options[piece_idx],
+            pieces, locations,
+            enemy_pieces, enemy_locations,
+            'white' if is_white_turn else 'black',
+            draw_check
+        )
+        for move in legal_moves:
             new_white_pieces = white_pieces.copy()
             new_white_locations = white_locations.copy()
             new_black_pieces = black_pieces.copy()
@@ -625,11 +665,12 @@ while run:
     
     # Existing game code follows...
     screen.fill('light gray')
-    turn_step, selection_reset, valid_moves_reset, time_left = chess_rules.turn_timer(turn_step)
+    selection_reset = None
+    valid_moves_reset = []
     
     draw_board()
     draw_pieces()
-    draw_timer(time_left)  # Show timer after board and pieces
+    #draw_timer(time_left)  # Show timer after board and pieces
     draw_check_message()
 
     # Check if time expired
@@ -651,7 +692,7 @@ while run:
         if player_color == 'white':
             # AI is black
             piece_idx, move = find_best_move(white_pieces, white_locations, black_pieces, black_locations, 
-                                             depth=3, is_white_turn=False)
+                                             depth=4, is_white_turn=False)
             if piece_idx != -1 and move is not None:
                 selection = piece_idx
                 old_pos = black_locations[selection]
@@ -930,7 +971,7 @@ while run:
                             turn_step = 2
                             selection = 100
                             valid_moves = []
-                            chess_rules.reset_turn_timer()
+                            #chess_rules.reset_turn_timer()
                             
                             # Check for stalemate/checkmate
                             if chess_rules.check_stalemate(black_pieces, black_locations, white_pieces, white_locations, 'black', 
@@ -1035,7 +1076,7 @@ while run:
                             turn_step = 0
                             selection = 100
                             valid_moves = []
-                            chess_rules.reset_turn_timer()
+                            #chess_rules.reset_turn_timer()
                             
                             # Check for stalemate/checkmate
                             if chess_rules.check_stalemate(white_pieces, white_locations, black_pieces, black_locations, 'white',
