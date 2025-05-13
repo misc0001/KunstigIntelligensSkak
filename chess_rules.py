@@ -96,6 +96,9 @@ def check_king(position, color, white_locations, black_locations, white_pieces, 
                                 white_locations, black_locations)
     return moves_list
 
+
+
+
 def under_attack(square, king_color, white_locations, black_locations, white_pieces, black_pieces):
     """Check if a square is under attack by any enemy piece"""
     # Determine enemy pieces and locations
