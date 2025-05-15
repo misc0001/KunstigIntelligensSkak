@@ -19,7 +19,7 @@ save_string = ''
 input_active = False
 input_text = ''
 check_message_timer = 0
-CHECK_MESSAGE_DURATION = 60  # frames (1 sekund at 60 FPS)
+CHECK_MESSAGE_DURATION = 60
 
 piece_values = {
     'pawn': 1,
@@ -27,7 +27,7 @@ piece_values = {
     'bishop': 3,
     'rook': 5,
     'queen': 9,
-    'king': 0  # Vi vurderer ikke kongeværdi da den ikke må tages
+    'king': 0 
 }
 
 
