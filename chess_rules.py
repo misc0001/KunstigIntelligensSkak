@@ -523,52 +523,37 @@ def check_checkmate(pieces, locations,
 
 def castling_move(pieces, locations, color, white_locations, black_locations, white_pieces, black_pieces):
     moves = []
-    if color == 'white' and not white_king_moved:
-        # Kingside
-        if (
-            not white_rook_kingside_moved and
-            (5, 0) not in white_locations + black_locations and
-            (6, 0) not in white_locations + black_locations and
-            not under_attack((4, 0), 'white', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((5, 0), 'white', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((6, 0), 'white', white_locations, black_locations, white_pieces, black_pieces)
-        ):
-            moves.append((6, 0))
-        # Queenside
-        if (
-            not white_rook_queenside_moved and
-            (1, 0) not in white_locations + black_locations and
-            (2, 0) not in white_locations + black_locations and
-            (3, 0) not in white_locations + black_locations and
-            not under_attack((4, 0), 'white', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((3, 0), 'white', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((2, 0), 'white', white_locations, black_locations, white_pieces, black_pieces)
-        ):
-            moves.append((2, 0))
 
-    if color == 'black' and not black_king_moved:
+    if color == 'white' and not white_king_moved and (4, 0) in white_locations:
         # Kingside
-        if (
-            not black_rook_kingside_moved and
-            (5, 7) not in white_locations + black_locations and
-            (6, 7) not in white_locations + black_locations and
-            not under_attack((4, 7), 'black', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((5, 7), 'black', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((6, 7), 'black', white_locations, black_locations, white_pieces, black_pieces)
-        ):
-            moves.append((6, 7))
+        if not white_rook_kingside_moved and (7, 0) in white_locations:
+            if all((x, 0) not in white_locations + black_locations for x in [5, 6]):
+                if not any(under_attack((x, 0), 'white', white_locations, black_locations, white_pieces, black_pieces)
+                           for x in [4, 5, 6]):
+                    moves.append((6, 0))
         # Queenside
-        if (
-            not black_rook_queenside_moved and
-            (1, 7) not in white_locations + black_locations and
-            (2, 7) not in white_locations + black_locations and
-            (3, 7) not in white_locations + black_locations and
-            not under_attack((4, 7), 'black', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((3, 7), 'black', white_locations, black_locations, white_pieces, black_pieces) and
-            not under_attack((2, 7), 'black', white_locations, black_locations, white_pieces, black_pieces)
-        ):
-            moves.append((2, 7))
+        if not white_rook_queenside_moved and (0, 0) in white_locations:
+            if all((x, 0) not in white_locations + black_locations for x in [1, 2, 3]):
+                if not any(under_attack((x, 0), 'white', white_locations, black_locations, white_pieces, black_pieces)
+                           for x in [2, 3, 4]):
+                    moves.append((2, 0))
+
+    if color == 'black' and not black_king_moved and (4, 7) in black_locations:
+        # Kingside
+        if not black_rook_kingside_moved and (7, 7) in black_locations:
+            if all((x, 7) not in white_locations + black_locations for x in [5, 6]):
+                if not any(under_attack((x, 7), 'black', white_locations, black_locations, white_pieces, black_pieces)
+                           for x in [4, 5, 6]):
+                    moves.append((6, 7))
+        # Queenside
+        if not black_rook_queenside_moved and (0, 7) in black_locations:
+            if all((x, 7) not in white_locations + black_locations for x in [1, 2, 3]):
+                if not any(under_attack((x, 7), 'black', white_locations, black_locations, white_pieces, black_pieces)
+                           for x in [2, 3, 4]):
+                    moves.append((2, 7))
+
     return moves
+
 
 
 def en_passant(color, last_move, white_pieces, white_locations, black_pieces, black_locations):
